@@ -2,53 +2,27 @@
 - hosts: all
   become: yes
   tasks:
-  - name: Installing & updating apache2 package
-    apt:
-      name: apache2
+  - name: install apache server
+    package:
+      name: "{{ pack_name }}"
       state: present
-      update_cache: yes
     notify:
-    - Restart apache2
-    when: ansible_os_family == "Debian"
-  - name: Install httpd
-    yum:
-      name: httpd
-      state: present
-      update_cache: yes
-    notify:
-    - Restart httpd
-    when: ansible_os_family == "Redhat"
-  - name: Install php packages
-    apt:
+    - restart apache
+  - name: install php packages
+    package:
       name: "{{ item }}"
       state: present
-    with_items:
-      - php
-      - libapache2-mod-php
-      - php-mysql
+    with_items: "{{ php_packages }}"
     notify:
-    - Restart apache2
-    when: ansible_os_family == "Debian"
-  - name: Install php packages in yum
-    yum:
-      name: "{{ item }}"
-      state: present
-    with_items:
-      - php
-      - php-mysql
+    - restart apache
+  - name: download web page
+    get_url:
+      url: https://raw.githubusercontent.com/asquarezone/AnsibleZone/master/ClassRoomExamples/July2018/basics/info.php
+      dest: /var/www/html/info.php
     notify:
-    - Restart httpd
-    when: ansible_os_family == "Redhat"
+    - restart apache
   handlers:
-  - name: Restart apache2
-    service:
-      name: apache2
-      enabled: yes
+  - name: restart apache
+    service: 
+      name: "{{ pack_name }}"
       state: restarted
-    when: ansible_os_family == "Debian"
-  - name: Restart httpd
-    service:
-      name: httpd
-      enabled: yes
-      state: restarted
-    when: ansible_os_family == "Redhat" 
