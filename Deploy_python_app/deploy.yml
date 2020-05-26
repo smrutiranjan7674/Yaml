@@ -1,0 +1,53 @@
+---
+- name: Deploy a web application
+  hosts: db_and_web_server
+  vars:
+     db_name: employee_db
+     db_user: db_user
+     db_password: Passw0rd
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - python
+        - python-setuptools
+        - python-dev
+        - build-essential
+        - python-pip
+        - python-mysqldb
+    - name: Install packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - mysql-server
+        - mysql-client
+    - name: Enable mysql service
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+    - name: Configuring the mysql database
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+    - name: Configuring user details
+      mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: '*.*:ALL'
+        host: '%'
+    - name: Installing python dependencies
+      pip:
+        name: "{{ item }}"
+      with_items:
+        - flask
+        - flask-mysql
+    - name: copying files to destination
+      copy:
+        src: app.py
+        dest: /opt/app.py
+    - name: start the app
+      shell: FLASK_APP=/opt/app.py nohup flask run --host=0.0.0.0 &
